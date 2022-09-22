@@ -2,7 +2,7 @@
 FROM golang:1.17 AS build
 WORKDIR /src
 ENV CGO_ENABLED=0
-COPY ./ ./
+COPY build ./
 RUN go mod download
 RUN go build -o /out/updater ./cmd/updater/main.go
 

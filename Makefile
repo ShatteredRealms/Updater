@@ -31,11 +31,8 @@ ifneq (,$(findstring v,$(BASE_VERSION)))
 	BASE_VERSION := $(shell echo $(BASE_VERSION) | cut --complement -c 1)
 endif
 
-# Gets the directory containing the Makefile
-BUILD_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-
 # Root code directory
-ROOT_DIR = $(realpath $(BUILD_DIR)/..)
+ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # Directory containing applications
 BASE_APP_DIR = $(realpath $(ROOT_DIR)/cmd)
@@ -65,7 +62,7 @@ time=$(shell date +%s)
 #                 |___/
 
 build:
-	go build -o $(BIN_DIR)/updater $(APP_MAIN)
+	go build -o $(BIN_DIR)/updater -ldflags="-X 'github.com/ShatteredRealms/UpdaterCLI/pkg/updater.version=$(BASE_VERSION)'" $(APP_MAIN)
 
 test:
 	ginkgo $(ROOT_DIR)/...
@@ -74,31 +71,3 @@ report:
 	go test $(ROOT_DIR)/... -coverprofile=$(ROOT_DIR)/coverage.out
 	# go tool cover -func=$(ROOT_DIR)/coverage.out
 	go tool cover -html=$(ROOT_DIR)/coverage.out -o $(ROOT_DIR)/coverage.html
-
-run-local:
-	SRO_DB_FILE=$(ROOT_DIR)/test/db.yaml SRO_KEY_DIR=$(ROOT_DIR)/test/auth go run $(APP_MAIN)
-
-deploy: aws-docker-login push
-
-build-image:
-	docker build -t $(BASE_TAG) -f Dockerfile ..
-
-
-aws-docker-login:
-	aws ecr get-login-password | docker login --username AWS --password-stdin $(SRO_BASE_REGISTRY)
-
-push-prod: build-image
-	docker tag $(BASE_TAG) $(REGISTRY):latest
-	docker tag $(BASE_TAG) $(REGISTRY):$(BASE_VERSION)
-	docker tag $(BASE_TAG) $(REGISTRY):$(BASE_VERSION)-$(time)
-	docker push $(REGISTRY):latest
-	docker push $(REGISTRY):$(BASE_VERSION)
-	docker push $(REGISTRY):$(BASE_VERSION)-$(time)
-
-push-%: build-image
-	docker tag $(BASE_TAG) $(REGISTRY)/$*:latest
-	docker tag $(BASE_TAG) $(REGISTRY)/$*:$(BASE_VERSION)
-	docker tag $(BASE_TAG) $(REGISTRY)/$*:$(BASE_VERSION)-$(time)
-	docker push $(REGISTRY)/$*:latest
-	docker push $(REGISTRY)/$*:$(BASE_VERSION)
-	docker push $(REGISTRY)/$*:$(BASE_VERSION)-$(time)
