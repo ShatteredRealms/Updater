@@ -13,8 +13,8 @@ import (
 )
 
 type FileData struct {
-	Name string
-	Hash string
+	Name string `json:"name"`
+	Hash string `json:"hash"`
 }
 
 type FolderStructure struct {
@@ -99,6 +99,8 @@ func GenerateMetadataFile(inputDir string, outputDir string, hashing bool) {
 			}
 		}
 	}
+	// Remove the root name because it should always be relative and therefore irrelevant
+	root.Name = ""
 	jsonBytes, err := json.Marshal(&root)
 	internal.HandleError(err)
 	outFile, err := os.Create(outputDir + "/" + outFileName)
